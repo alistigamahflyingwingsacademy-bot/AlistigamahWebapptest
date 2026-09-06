@@ -610,7 +610,7 @@
         </div>
     </div>
 
-    <!-- ===== UPDATED Accept Details Modal with TWO signature pads ===== -->
+    <!-- ===== UPDATED Accept Details Modal (no stamp upload) ===== -->
     <div id="acceptDetailsModal" class="modal">
         <div class="modal-content relative" style="max-width:750px;"><span class="close-modal-x" onclick="closeModal('acceptDetailsModal')">&times;</span>
             <h3 class="text-xl font-bold mb-3">Accept Application – Official Use Only</h3>
@@ -645,11 +645,7 @@
                     <input type="hidden" id="registerSignatureData" value="" />
                     <div class="mt-2"><label>Register's Name (Printed):</label><input id="registerSignatureName" class="border p-2 w-full rounded" placeholder="e.g. Mr. Ahmed" /></div>
                 </div>
-                <div class="mb-2">
-                    <label>School Stamp (upload image):</label>
-                    <input type="file" id="stampUpload" accept="image/*" class="border p-2 w-full rounded" />
-                    <p class="text-xs text-gray-500 mt-1">Upload a stamp image (will be used in the letter).</p>
-                </div>
+                <!-- Stamp upload removed – now using static file -->
                 <button type="submit" class="apply-btn w-full py-2 rounded">Accept & Save</button>
             </form>
         </div>
@@ -2685,7 +2681,7 @@
         }
 
         // ============================================================
-        //  ADMISSION LETTER — ENHANCED: MAROON BORDER, STAMP, SIGNATURES
+        //  ADMISSION LETTER — ENHANCED: MAROON BORDER, STATIC STAMP, 2 SIGNATURES
         // ============================================================
         function printAdmissionLetter(application) {
             var official = application.official_data || {};
@@ -2702,7 +2698,8 @@
             var headSignatureName = official.authorized_signature_name || 'Authorized Officer';
             var registerSignatureImage = official.register_signature_image || null;
             var registerSignatureName = official.register_signature_name || 'Register';
-            var stampImage = official.stamp_image_url || 'stamp.jpg'; // default to stamp.jpg file
+            // Static stamp from local file
+            var stampImage = 'stamp.png';  // Use static file from same directory
 
             var letterHtml = `
         <!DOCTYPE html>
@@ -3019,7 +3016,7 @@
         }
 
         // ============================================================
-        //  ACCEPT DETAILS FORM SUBMIT (save both signatures and stamp)
+        //  ACCEPT DETAILS FORM SUBMIT (save both signatures, no stamp upload)
         // ============================================================
         document.getElementById('acceptDetailsForm')?.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -3032,23 +3029,6 @@
             if (registerSignaturePad && !registerSignaturePad.isEmpty()) {
                 regSigData = registerSignaturePad.toDataURL('image/png');
             }
-            // Stamp upload handling
-            var stampFile = document.getElementById('stampUpload').files[0];
-            var stampUrl = '';
-            if (stampFile) {
-                showLoading(true);
-                try {
-                    var path = 'stamps/' + Date.now() + '_' + stampFile.name;
-                    const { error } = await supabaseClient.storage.from('school-stamps').upload(path,
-                    stampFile);
-                    if (error) throw error;
-                    const { data: { publicUrl } } = supabaseClient.storage.from('school-stamps')
-                        .getPublicUrl(path);
-                    stampUrl = publicUrl;
-                } catch (err) { showToast('Error uploading stamp: ' + err.message, true);
-                    showLoading(false); return; }
-                showLoading(false);
-            }
 
             var officialData = {
                 entrance_score: document.getElementById('acceptEntranceScore').value,
@@ -3060,7 +3040,7 @@
                 authorized_signature_image: headSigData,
                 register_signature_name: document.getElementById('registerSignatureName').value,
                 register_signature_image: regSigData,
-                stamp_image_url: stampUrl,
+                // No stamp_image_url – we use static file
                 status: 'accepted'
             };
             showLoading(true);
