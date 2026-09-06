@@ -267,6 +267,13 @@
             display: block;
             margin: 0 auto 5px;
         }
+        /* New signature canvas style */
+        .sig-canvas {
+            border: 1px solid #ccc;
+            background: white;
+            width: 100%;
+            height: 120px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -292,6 +299,8 @@
                     <button id="publicApplyBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-file-alt mr-2"></i>Apply for Admission</button>
                     <button id="contactBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-envelope mr-2"></i>Contact Us</button>
                     <button id="checkStatusBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-search mr-2"></i>Check Application Status</button>
+                    <!-- NEW: Print Admission Letter (Pay N2000) -->
+                    <button id="printLetterBtn" class="bg-rose-700 hover:bg-rose-800 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-print mr-2"></i>Print Admission Letter (₦2000)</button>
                 </div>
             </div>
         </div>
@@ -601,9 +610,9 @@
         </div>
     </div>
 
-    <!-- Accept Details Modal with Signature Pad -->
+    <!-- ===== UPDATED Accept Details Modal with TWO signature pads ===== -->
     <div id="acceptDetailsModal" class="modal">
-        <div class="modal-content relative" style="max-width:700px;"><span class="close-modal-x" onclick="closeModal('acceptDetailsModal')">&times;</span>
+        <div class="modal-content relative" style="max-width:750px;"><span class="close-modal-x" onclick="closeModal('acceptDetailsModal')">&times;</span>
             <h3 class="text-xl font-bold mb-3">Accept Application – Official Use Only</h3>
             <form id="acceptDetailsForm">
                 <input type="hidden" id="acceptAppId" />
@@ -614,16 +623,33 @@
                     <div><label>Date of Admission:</label><input type="date" id="acceptAdmissionDate" class="border p-2 w-full rounded" /></div>
                 </div>
                 <div class="mb-2"><label>Interview Remarks:</label><textarea id="acceptInterviewRemarks" rows="2" class="border p-2 w-full rounded"></textarea></div>
+                <!-- Head Master Signature -->
                 <div class="border rounded p-3 mb-3 bg-gray-50">
-                    <label class="block font-bold mb-2">Authorized Signature (Draw below):</label>
-                    <canvas id="signatureCanvas" width="400" height="150" style="border:1px solid #ccc; background:white; width:100%; height:150px;"></canvas>
+                    <label class="block font-bold mb-2">Head Master's Signature (Draw below):</label>
+                    <canvas id="signatureCanvas" class="sig-canvas"></canvas>
                     <div class="flex gap-2 mt-2">
                         <button type="button" id="clearSignatureBtn" class="bg-gray-500 text-white px-3 py-1 rounded text-sm">Clear</button>
                         <button type="button" id="undoSignatureBtn" class="bg-gray-500 text-white px-3 py-1 rounded text-sm">Undo</button>
                     </div>
                     <input type="hidden" id="acceptSignatureData" value="" />
+                    <div class="mt-2"><label>Head Master's Name (Printed):</label><input id="acceptSignature" class="border p-2 w-full rounded" /></div>
                 </div>
-                <div class="mb-2"><label>Authorized Name (Printed):</label><input id="acceptSignature" class="border p-2 w-full rounded" /></div>
+                <!-- Register Signature -->
+                <div class="border rounded p-3 mb-3 bg-gray-50">
+                    <label class="block font-bold mb-2">Register's Signature (Draw below):</label>
+                    <canvas id="registerSignatureCanvas" class="sig-canvas"></canvas>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" id="clearRegisterSigBtn" class="bg-gray-500 text-white px-3 py-1 rounded text-sm">Clear</button>
+                        <button type="button" id="undoRegisterSigBtn" class="bg-gray-500 text-white px-3 py-1 rounded text-sm">Undo</button>
+                    </div>
+                    <input type="hidden" id="registerSignatureData" value="" />
+                    <div class="mt-2"><label>Register's Name (Printed):</label><input id="registerSignatureName" class="border p-2 w-full rounded" placeholder="e.g. Mr. Ahmed" /></div>
+                </div>
+                <div class="mb-2">
+                    <label>School Stamp (upload image):</label>
+                    <input type="file" id="stampUpload" accept="image/*" class="border p-2 w-full rounded" />
+                    <p class="text-xs text-gray-500 mt-1">Upload a stamp image (will be used in the letter).</p>
+                </div>
                 <button type="submit" class="apply-btn w-full py-2 rounded">Accept & Save</button>
             </form>
         </div>
@@ -690,6 +716,18 @@
                     <button type="submit" class="apply-btn w-full py-2 rounded">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ===== NEW: Print Admission Letter Payment Modal ===== -->
+    <div id="printLetterModal" class="modal">
+        <div class="modal-content relative" style="max-width:500px;">
+            <span class="close-modal-x" onclick="closeModal('printLetterModal')">&times;</span>
+            <h3 class="text-xl font-bold mb-3">Print Admission Letter</h3>
+            <p class="text-sm text-gray-600 mb-4">Enter your admission number to pay ₦2,000 and get your admission letter.</p>
+            <input type="text" id="admissionNumberInput" placeholder="Admission Number" class="border p-3 w-full rounded-xl mb-3" />
+            <button id="payForLetterBtn" class="apply-btn w-full py-2 rounded-xl">Pay ₦2,000 & Get Letter</button>
+            <div id="letterPaymentResult" class="mt-4"></div>
         </div>
     </div>
 
@@ -775,6 +813,7 @@
         let carouselSlides = [];
         let pendingPaymentAction = null;
         let signaturePad = null;
+        let registerSignaturePad = null;
         let directorChart = null;
 
         // ============================================================
@@ -2587,7 +2626,7 @@
                     btn.addEventListener('click', function() {
                         document.getElementById('acceptAppId').value = this.dataset.id;
                         document.getElementById('acceptDetailsModal').style.display = 'flex';
-                        setTimeout(initSignaturePad, 200);
+                        setTimeout(initSignaturePads, 200);
                     });
                 });
                 document.querySelectorAll('.reject-app').forEach(function(btn) {
@@ -2646,7 +2685,7 @@
         }
 
         // ============================================================
-        //  ADMISSION LETTER — COLORED PROFESSIONAL VERSION
+        //  ADMISSION LETTER — ENHANCED: MAROON BORDER, STAMP, SIGNATURES
         // ============================================================
         function printAdmissionLetter(application) {
             var official = application.official_data || {};
@@ -2659,8 +2698,11 @@
             var admissionNumber = official.admission_number || 'Pending';
             var admissionDate = official.admission_date || new Date().toLocaleDateString();
             var passportPhotoUrl = formData.attachments?.attachment_passport_photos || null;
-            var signatureImage = official.authorized_signature_image || null;
-            var signatoryName = official.authorized_signature_name || 'Authorized Officer';
+            var headSignatureImage = official.authorized_signature_image || null;
+            var headSignatureName = official.authorized_signature_name || 'Authorized Officer';
+            var registerSignatureImage = official.register_signature_image || null;
+            var registerSignatureName = official.register_signature_name || 'Register';
+            var stampImage = official.stamp_image_url || 'stamp.jpg'; // default to stamp.jpg file
 
             var letterHtml = `
         <!DOCTYPE html>
@@ -2681,8 +2723,8 @@
                     max-width: 1000px;
                     width: 100%;
                     background: #ffffff;
-                    border: 8px double #c9a84c;
-                    border-radius: 20px;
+                    border: 12px double #800000; /* Maroon double border */
+                    border-radius: 30px;
                     padding: 30px 40px;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
                     position: relative;
@@ -2690,14 +2732,24 @@
                 .letter::before {
                     content: '';
                     position: absolute;
-                    top: 8px; left: 8px; right: 8px; bottom: 8px;
-                    border: 2px solid #d4b86a;
-                    border-radius: 15px;
+                    top: 12px; left: 12px; right: 12px; bottom: 12px;
+                    border: 3px solid #a52a2a;
+                    border-radius: 25px;
                     pointer-events: none;
+                }
+                /* ornate corner decorations */
+                .letter::after {
+                    content: '✦';
+                    position: absolute;
+                    top: 18px;
+                    left: 30px;
+                    font-size: 24px;
+                    color: #800000;
+                    opacity: 0.3;
                 }
                 .header {
                     text-align: center;
-                    border-bottom: 3px solid #c9a84c;
+                    border-bottom: 3px solid #800000;
                     padding-bottom: 15px;
                     margin-bottom: 20px;
                 }
@@ -2706,7 +2758,7 @@
                     display: block;
                     margin: 0 auto 8px;
                     border-radius: 50%;
-                    border: 2px solid #c9a84c;
+                    border: 2px solid #800000;
                 }
                 .header h1 {
                     font-size: 28px;
@@ -2716,7 +2768,7 @@
                 }
                 .header h2 {
                     font-size: 20px;
-                    color: #b8860b;
+                    color: #800000;
                     margin: 2px 0;
                 }
                 .header .motto {
@@ -2743,7 +2795,7 @@
                 .photo {
                     flex: 0 0 130px;
                     height: 150px;
-                    border: 3px solid #c9a84c;
+                    border: 3px solid #800000;
                     border-radius: 12px;
                     overflow: hidden;
                     background: #f9f6ef;
@@ -2784,13 +2836,13 @@
                     text-align: justify;
                 }
                 .body-text strong {
-                    color: #b8860b;
+                    color: #800000;
                 }
                 .signatures {
                     display: flex;
                     justify-content: space-between;
                     margin-top: 30px;
-                    border-top: 2px solid #c9a84c;
+                    border-top: 3px double #800000;
                     padding-top: 20px;
                 }
                 .signature-box {
@@ -2812,6 +2864,17 @@
                     padding-top: 5px;
                     margin-top: 5px;
                 }
+                .stamp-container {
+                    margin-top: 10px;
+                    text-align: center;
+                }
+                .stamp-container img {
+                    max-height: 80px;
+                    border: 2px solid #800000;
+                    border-radius: 10px;
+                    padding: 5px;
+                    background: white;
+                }
                 .footer {
                     margin-top: 20px;
                     text-align: center;
@@ -2822,7 +2885,7 @@
                 }
                 .no-print { text-align: center; margin-top: 20px; }
                 .no-print button {
-                    background: #1a3c34;
+                    background: #800000;
                     color: white;
                     border: none;
                     padding: 10px 25px;
@@ -2831,10 +2894,10 @@
                     cursor: pointer;
                     margin: 0 8px;
                 }
-                .no-print button:hover { background: #b8860b; }
+                .no-print button:hover { background: #a52a2a; }
                 @media print {
                     body { background: white; padding: 0; }
-                    .letter { border: 4px double #c9a84c; box-shadow: none; }
+                    .letter { border: 6px double #800000; box-shadow: none; }
                     .no-print { display: none; }
                 }
             </style>
@@ -2874,19 +2937,21 @@
 
                 <div class="signatures">
                     <div class="signature-box">
-                        ${signatureImage ? `<div class="sig-image"><img src="${signatureImage}" alt="Signature"></div>` : '<div style="height:40px;"></div>'}
-                        <div><strong>${escapeHtml(signatoryName)}</strong></div>
+                        ${headSignatureImage ? `<div class="sig-image"><img src="${headSignatureImage}" alt="Signature"></div>` : '<div style="height:40px;"></div>'}
+                        <div><strong>${escapeHtml(headSignatureName)}</strong></div>
                         <div class="label">توقيع عميد المرسلة<br>Head Master's Signature</div>
                     </div>
                     <div class="signature-box">
-                        <div style="height:40px;"></div>
+                        <div class="stamp-container">
+                            <img src="${stampImage}" alt="School Stamp" onerror="this.style.display='none'">
+                        </div>
                         <div>School Stamp</div>
                         <div class="label">خاتم المرسلة<br>School Stamp</div>
                     </div>
                     <div class="signature-box">
-                        <div style="height:40px;"></div>
-                        <div>Section Registrar</div>
-                        <div class="label">توقيع مسجل القسم<br>Section Registrar's Signature</div>
+                        ${registerSignatureImage ? `<div class="sig-image"><img src="${registerSignatureImage}" alt="Signature"></div>` : '<div style="height:40px;"></div>'}
+                        <div><strong>${escapeHtml(registerSignatureName)}</strong></div>
+                        <div class="label">توقيع المسجل<br>Register's Signature</div>
                     </div>
                 </div>
 
@@ -2906,6 +2971,112 @@
             win.document.write(letterHtml);
             win.document.close();
         }
+
+        // ============================================================
+        //  INITIALIZE SIGNATURE PADS (two pads)
+        // ============================================================
+        function initSignaturePads() {
+            // Head Master signature
+            var canvas = document.getElementById('signatureCanvas');
+            if (!canvas) return;
+            if (signaturePad) signaturePad.clear();
+            signaturePad = new SignaturePad(canvas, { backgroundColor: 'white', penColor: 'black', minWidth: 1,
+                maxWidth: 2 });
+            var ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+            signaturePad.clear();
+
+            // Register signature
+            var canvasReg = document.getElementById('registerSignatureCanvas');
+            if (!canvasReg) return;
+            if (registerSignaturePad) registerSignaturePad.clear();
+            registerSignaturePad = new SignaturePad(canvasReg, { backgroundColor: 'white', penColor: 'black',
+                minWidth: 1, maxWidth: 2 });
+            var ratioReg = Math.max(window.devicePixelRatio || 1, 1);
+            canvasReg.width = canvasReg.offsetWidth * ratioReg;
+            canvasReg.height = canvasReg.offsetHeight * ratioReg;
+            canvasReg.getContext('2d').scale(ratioReg, ratioReg);
+            registerSignaturePad.clear();
+
+            // Clear/Undo buttons
+            document.getElementById('clearSignatureBtn')?.addEventListener('click', function() { signaturePad
+                    .clear(); });
+            document.getElementById('undoSignatureBtn')?.addEventListener('click', function() {
+                var data = signaturePad.toData();
+                if (data) { data.pop();
+                    signaturePad.fromData(data); }
+            });
+            document.getElementById('clearRegisterSigBtn')?.addEventListener('click', function() {
+                registerSignaturePad.clear();
+            });
+            document.getElementById('undoRegisterSigBtn')?.addEventListener('click', function() {
+                var data = registerSignaturePad.toData();
+                if (data) { data.pop();
+                    registerSignaturePad.fromData(data); }
+            });
+        }
+
+        // ============================================================
+        //  ACCEPT DETAILS FORM SUBMIT (save both signatures and stamp)
+        // ============================================================
+        document.getElementById('acceptDetailsForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var appId = document.getElementById('acceptAppId').value;
+            var headSigData = '';
+            var regSigData = '';
+            if (signaturePad && !signaturePad.isEmpty()) {
+                headSigData = signaturePad.toDataURL('image/png');
+            }
+            if (registerSignaturePad && !registerSignaturePad.isEmpty()) {
+                regSigData = registerSignaturePad.toDataURL('image/png');
+            }
+            // Stamp upload handling
+            var stampFile = document.getElementById('stampUpload').files[0];
+            var stampUrl = '';
+            if (stampFile) {
+                showLoading(true);
+                try {
+                    var path = 'stamps/' + Date.now() + '_' + stampFile.name;
+                    const { error } = await supabaseClient.storage.from('school-stamps').upload(path,
+                    stampFile);
+                    if (error) throw error;
+                    const { data: { publicUrl } } = supabaseClient.storage.from('school-stamps')
+                        .getPublicUrl(path);
+                    stampUrl = publicUrl;
+                } catch (err) { showToast('Error uploading stamp: ' + err.message, true);
+                    showLoading(false); return; }
+                showLoading(false);
+            }
+
+            var officialData = {
+                entrance_score: document.getElementById('acceptEntranceScore').value,
+                interview_remarks: document.getElementById('acceptInterviewRemarks').value,
+                admitted_class: document.getElementById('acceptAdmittedClass').value,
+                admission_number: document.getElementById('acceptAdmissionNumber').value,
+                admission_date: document.getElementById('acceptAdmissionDate').value,
+                authorized_signature_name: document.getElementById('acceptSignature').value,
+                authorized_signature_image: headSigData,
+                register_signature_name: document.getElementById('registerSignatureName').value,
+                register_signature_image: regSigData,
+                stamp_image_url: stampUrl,
+                status: 'accepted'
+            };
+            showLoading(true);
+            try {
+                var app = schoolData.applications.find(function(a) { return a.id == appId; });
+                var existingOfficial = app.official_data || {};
+                await supabaseClient.from('applications').update({ status: 'accepted', official_data: {
+                        ...existingOfficial,
+                        ...officialData
+                    } }).eq('id', appId);
+                await refreshData();
+                showToast('Application accepted with official details');
+                closeModal('acceptDetailsModal');
+                applicationsViewEnhanced();
+            } catch (err) { showToast(err.message, true); } finally { showLoading(false); }
+        });
 
         // ============================================================
         //  FULL APPLICATION FORM SUBMIT
@@ -4344,15 +4515,12 @@
             var email = document.getElementById('statusSearchEmail').value.trim().toLowerCase();
             var resultDiv = document.getElementById('statusResult');
 
-            // If all fields empty, show message
             if (!name && !phone && !email) {
                 resultDiv.innerHTML = '<span class="text-red-600">Please enter at least one search criterion (Name, Phone, or Email).</span>';
                 return;
             }
 
             var applications = schoolData.applications;
-
-            // Filter applications
             var matches = applications.filter(function(app) {
                 var appName = (app.full_name || '').toLowerCase();
                 var appPhone = (app.form_data && app.form_data.parent_phone) || '';
@@ -4362,11 +4530,9 @@
                 var phoneMatch = phone ? appPhone.includes(phone) : false;
                 var emailMatch = email ? appEmail.includes(email) : false;
 
-                // If email is provided, we want to show ALL applications with that same email (even if name/phone don't match)
                 if (email) {
                     return appEmail === email;
                 }
-                // Otherwise use OR logic for name and phone
                 return (name && nameMatch) || (phone && phoneMatch);
             });
 
@@ -4375,7 +4541,6 @@
                 return;
             }
 
-            // Build a list of applications
             var html = '<div class="space-y-3">';
             matches.forEach(function(app, index) {
                 var status = app.status || 'pending';
@@ -4407,6 +4572,49 @@
             });
             html += '</div>';
             resultDiv.innerHTML = html;
+        });
+
+        // ============================================================
+        //  NEW: PRINT ADMISSION LETTER (PAY N2000)
+        // ============================================================
+        document.getElementById('printLetterBtn').addEventListener('click', function() {
+            document.getElementById('printLetterModal').style.display = 'flex';
+        });
+
+        document.getElementById('payForLetterBtn').addEventListener('click', function() {
+            var admissionNumber = document.getElementById('admissionNumberInput').value.trim();
+            if (!admissionNumber) {
+                showToast('Please enter your admission number', true);
+                return;
+            }
+
+            // Find application with this admission number
+            var app = schoolData.applications.find(function(a) {
+                return a.official_data && a.official_data.admission_number === admissionNumber;
+            });
+
+            if (!app) {
+                showToast('No application found with that admission number.', true);
+                return;
+            }
+
+            // Paystack payment for N2000
+            var handler = PaystackPop.setup({
+                key: PAYSTACK_PUBLIC_KEY,
+                email: app.email || 'applicant@example.com',
+                amount: 2000 * 100, // N2000 in kobo
+                callback: function(response) {
+                    // Payment successful – show admission letter
+                    showToast('Payment successful! Your admission letter is ready.', false);
+                    closeModal('printLetterModal');
+                    // Print the admission letter
+                    printAdmissionLetter(app);
+                },
+                onClose: function() {
+                    showToast('Payment cancelled.', true);
+                }
+            });
+            handler.openIframe();
         });
 
         // ============================================================
