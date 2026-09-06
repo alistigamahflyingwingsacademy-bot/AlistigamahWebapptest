@@ -1,3 +1,7 @@
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -267,7 +271,6 @@
             display: block;
             margin: 0 auto 5px;
         }
-        /* New signature canvas style */
         .sig-canvas {
             border: 1px solid #ccc;
             background: white;
@@ -299,7 +302,6 @@
                     <button id="publicApplyBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-file-alt mr-2"></i>Apply for Admission</button>
                     <button id="contactBtn" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-envelope mr-2"></i>Contact Us</button>
                     <button id="checkStatusBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-search mr-2"></i>Check Application Status</button>
-                    <!-- NEW: Print Admission Letter (Pay N2000) -->
                     <button id="printLetterBtn" class="bg-rose-700 hover:bg-rose-800 text-white px-6 py-2 rounded-full font-bold"><i class="fas fa-print mr-2"></i>Print Admission Letter (₦2000)</button>
                 </div>
             </div>
@@ -645,7 +647,6 @@
                     <input type="hidden" id="registerSignatureData" value="" />
                     <div class="mt-2"><label>Register's Name (Printed):</label><input id="registerSignatureName" class="border p-2 w-full rounded" placeholder="e.g. Mr. Ahmed" /></div>
                 </div>
-                <!-- Stamp upload removed – now using static file -->
                 <button type="submit" class="apply-btn w-full py-2 rounded">Accept & Save</button>
             </form>
         </div>
@@ -811,6 +812,7 @@
         let signaturePad = null;
         let registerSignaturePad = null;
         let directorChart = null;
+        let cachedStampDataUrl = null;
 
         // ============================================================
         //  ROLE MENUS — "Apps" changed to "Applicant"
@@ -2681,7 +2683,7 @@
         }
 
         // ============================================================
-        //  ADMISSION LETTER — ENHANCED: MAROON BORDER, STATIC STAMP, 2 SIGNATURES
+        //  ADMISSION LETTER — ENHANCED: MAROON BORDER, STATIC STAMP (loaded via fetch), 2 SIGNATURES
         // ============================================================
         function printAdmissionLetter(application) {
             var official = application.official_data || {};
@@ -2698,8 +2700,9 @@
             var headSignatureName = official.authorized_signature_name || 'Authorized Officer';
             var registerSignatureImage = official.register_signature_image || null;
             var registerSignatureName = official.register_signature_name || 'Register';
-            // Static stamp from local file
-            var stampImage = 'stamp.png';  // Use static file from same directory
+
+            // Use cached stamp data URL if available, else fallback to file path
+            var stampImage = cachedStampDataUrl || 'stamp.png';
 
             var letterHtml = `
         <!DOCTYPE html>
@@ -2720,7 +2723,7 @@
                     max-width: 1000px;
                     width: 100%;
                     background: #ffffff;
-                    border: 12px double #800000; /* Maroon double border */
+                    border: 12px double #800000;
                     border-radius: 30px;
                     padding: 30px 40px;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.15);
@@ -2734,7 +2737,6 @@
                     border-radius: 25px;
                     pointer-events: none;
                 }
-                /* ornate corner decorations */
                 .letter::after {
                     content: '✦';
                     position: absolute;
@@ -2970,6 +2972,32 @@
         }
 
         // ============================================================
+        //  LOAD STAMP AS DATA URL (automatically from stamp.png)
+        // ============================================================
+        async function loadStamp() {
+            try {
+                const response = await fetch('stamp.png');
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const blob = await response.blob();
+                const reader = new FileReader();
+                return new Promise((resolve) => {
+                    reader.onload = function() {
+                        cachedStampDataUrl = reader.result;
+                        resolve();
+                    };
+                    reader.onerror = function() {
+                        console.warn('Failed to read stamp file');
+                        resolve();
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn('Stamp not loaded (will use fallback)', e);
+                cachedStampDataUrl = null;
+            }
+        }
+
+        // ============================================================
         //  INITIALIZE SIGNATURE PADS (two pads)
         // ============================================================
         function initSignaturePads() {
@@ -3040,7 +3068,6 @@
                 authorized_signature_image: headSigData,
                 register_signature_name: document.getElementById('registerSignatureName').value,
                 register_signature_image: regSigData,
-                // No stamp_image_url – we use static file
                 status: 'accepted'
             };
             showLoading(true);
@@ -4584,10 +4611,8 @@
                 email: app.email || 'applicant@example.com',
                 amount: 2000 * 100, // N2000 in kobo
                 callback: function(response) {
-                    // Payment successful – show admission letter
                     showToast('Payment successful! Your admission letter is ready.', false);
                     closeModal('printLetterModal');
-                    // Print the admission letter
                     printAdmissionLetter(app);
                 },
                 onClose: function() {
@@ -4601,6 +4626,9 @@
         //  DOMContentLoaded
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function() {
+            // Load the stamp first (then proceed)
+            await loadStamp();
+
             await refreshData();
             renderLandingCarouselAndAnnouncement();
 
@@ -4672,4 +4700,4 @@
         });
     </script>
 </body>
-    </html>
+                            </html>
