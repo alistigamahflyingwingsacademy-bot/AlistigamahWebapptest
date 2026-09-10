@@ -35,9 +35,12 @@
         .close-modal-x:hover { color: black; }
         .dot { height: 12px; width: 12px; background: #bbb; border-radius: 50%; display: inline-block; margin: 0 4px; cursor: pointer; transition: 0.2s; }
         .dot.active { background: #f59e0b; transform: scale(1.2); }
-        /* FIX: was scoped to #receipt-print-area which no longer exists -> made printing the whole app blank. */
-        @media print { .no-print { display: none !important; } }
-        /* FIX: shared pill styling so partial/unpaid look identical to paid */
+        /* Print rules: only #printLetterContent is visible when printing */
+        @media print {
+            body * { visibility: hidden; }
+            #printLetterContent, #printLetterContent * { visibility: visible; }
+            #printLetterContent { position: absolute; left: 0; top: 0; width: 100%; padding: 30px; background: #fff; }
+        }
         .status-paid, .status-partial, .status-unpaid {
             padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; display: inline-block; white-space: nowrap;
         }
@@ -63,6 +66,8 @@
         .sig-canvas { border: 1px solid #ccc; background: white; width: 100%; height: 120px; }
         table.min-w-full th { text-align: left; padding: 8px; background: #f9fafb; font-weight: 600; }
         table.min-w-full td { padding: 8px; border-top: 1px solid #f1f5f9; }
+        /* Stamp styling inside the letter */
+        .letter-stamp { max-height: 110px; max-width: 140px; opacity: 0.9; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -162,12 +167,6 @@
 
     <!-- ===== MODALS ===== -->
 
-    <!-- ============================================================
-         FIX #1 — THESE FOUR MODALS WERE COMPLETELY MISSING.
-         The landing-page buttons called getElementById(...).style.display
-         on non-existent elements -> TypeError on click.
-         ============================================================ -->
-
     <!-- Staff / Admin Login Modal -->
     <div id="loginModal" class="modal">
         <div class="modal-content relative" style="max-width:450px;">
@@ -244,7 +243,7 @@
         </div>
     </div>
 
-    <!-- Applicant Authentication Modal (Login/Register) -->
+    <!-- Applicant Authentication Modal -->
     <div id="applicantAuthModal" class="modal">
         <div class="modal-content relative" style="max-width:450px;">
             <span class="close-modal-x" onclick="closeModal('applicantAuthModal')">&times;</span>
@@ -319,71 +318,71 @@
                 <div class="border rounded-xl p-4 bg-gray-50">
                     <h3 class="font-bold text-lg mb-2">C. HEALTH INFORMATION / البيانات الصحية</h3>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="blood_group" placeholder="Blood Group/Genotype / فصيلة الدم/التركيب الوراثي" class="border p-2 rounded" />
-                        <input name="allergies" placeholder="Known Allergies / الحساسية (ان وجدت)" class="border p-2 rounded" />
-                        <input name="physical_challenge" placeholder="Physical Challenge / إعاقات جسدية (ان وجدت)" class="border p-2 rounded" />
-                        <input name="chronic_illness" placeholder="Chronic Illness / أمراض مزمنة (ان وجدت)" class="border p-2 rounded" />
-                        <textarea name="emergency_health" placeholder="Emergency Health Info / معلومات طبية طارئة" rows="2" class="border p-2 rounded"></textarea>
-                        <input name="immunization" placeholder="Immunization Status / حالة التطعيم" class="border p-2 rounded" />
+                        <input name="blood_group" placeholder="Blood Group/Genotype" class="border p-2 rounded" />
+                        <input name="allergies" placeholder="Known Allergies" class="border p-2 rounded" />
+                        <input name="physical_challenge" placeholder="Physical Challenge" class="border p-2 rounded" />
+                        <input name="chronic_illness" placeholder="Chronic Illness" class="border p-2 rounded" />
+                        <textarea name="emergency_health" placeholder="Emergency Health Info" rows="2" class="border p-2 rounded"></textarea>
+                        <input name="immunization" placeholder="Immunization Status" class="border p-2 rounded" />
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">D. PARENT/GUARDIAN INFORMATION / بيانات الوالد/الوصي</h3>
+                    <h3 class="font-bold text-lg mb-2">D. PARENT/GUARDIAN INFORMATION</h3>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="father_name" placeholder="Father's Full Name / اسم الأب كاملًا" class="border p-2 rounded" />
-                        <input name="mother_name" placeholder="Mother's Full Name / اسم الأم كاملًا" class="border p-2 rounded" />
-                        <input name="guardian_name" placeholder="Guardian's Name (if any) / اسم الوصي" class="border p-2 rounded" />
-                        <input name="guardian_relation" placeholder="Relationship to Child / صلة القرابة" class="border p-2 rounded" />
-                        <input name="parent_occupation" placeholder="Occupation / المهنة" class="border p-2 rounded" />
-                        <input name="parent_residence" placeholder="Residential Address / عنوان السكن" class="border p-2 rounded" />
-                        <input name="parent_office" placeholder="Office Address / عنوان الوظيفة" class="border p-2 rounded" />
-                        <input name="parent_phone" placeholder="Phone Number(s) / رقم الهاتف" class="border p-2 rounded" />
-                        <input name="parent_email" placeholder="Email Address / البريد الإلكتروني" class="border p-2 rounded" />
+                        <input name="father_name" placeholder="Father's Full Name" class="border p-2 rounded" />
+                        <input name="mother_name" placeholder="Mother's Full Name" class="border p-2 rounded" />
+                        <input name="guardian_name" placeholder="Guardian's Name (if any)" class="border p-2 rounded" />
+                        <input name="guardian_relation" placeholder="Relationship to Child" class="border p-2 rounded" />
+                        <input name="parent_occupation" placeholder="Occupation" class="border p-2 rounded" />
+                        <input name="parent_residence" placeholder="Residential Address" class="border p-2 rounded" />
+                        <input name="parent_office" placeholder="Office Address" class="border p-2 rounded" />
+                        <input name="parent_phone" placeholder="Phone Number(s)" class="border p-2 rounded" />
+                        <input name="parent_email" placeholder="Email Address" class="border p-2 rounded" />
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">E. SPONSOR/FINANCIAL INFORMATION / بيانات الكفيل/الرسوم الدراسية</h3>
+                    <h3 class="font-bold text-lg mb-2">E. SPONSOR/FINANCIAL INFORMATION</h3>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="sponsor_name" placeholder="Name of Sponsor / اسم الكفيل" class="border p-2 rounded" />
-                        <input name="sponsor_relation" placeholder="Relationship to Child / صلة القرابة بالطالب" class="border p-2 rounded" />
-                        <input name="sponsor_address" placeholder="Contact Address / عنوان الاتصال" class="border p-2 rounded" />
-                        <input name="sponsor_phone" placeholder="Phone Number / رقم الهاتف" class="border p-2 rounded" />
-                        <input name="fee_responsible" placeholder="Person Responsible for Fees / الجهة المسؤولة عن الرسوم" class="border p-2 rounded" />
+                        <input name="sponsor_name" placeholder="Name of Sponsor" class="border p-2 rounded" />
+                        <input name="sponsor_relation" placeholder="Relationship to Child" class="border p-2 rounded" />
+                        <input name="sponsor_address" placeholder="Contact Address" class="border p-2 rounded" />
+                        <input name="sponsor_phone" placeholder="Phone Number" class="border p-2 rounded" />
+                        <input name="fee_responsible" placeholder="Person Responsible for Fees" class="border p-2 rounded" />
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">F. RELIGIOUS INFORMATION (ISLAMIC) / البيانات الدينية</h3>
+                    <h3 class="font-bold text-lg mb-2">F. RELIGIOUS INFORMATION (ISLAMIC)</h3>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="muslim_name" placeholder="Muslim Name / الاسم الإسلامي" class="border p-2 rounded" />
-                        <input name="quran_reading" placeholder="Qur'an Reading Ability / مستوى قراءة القرآن" class="border p-2 rounded" />
-                        <input name="memorization_level" placeholder="Level of Qur'an Memorization / مقدار حفظ القرآن" class="border p-2 rounded" />
-                        <input name="previous_madrasah" placeholder="Previous Madrasah Attended / المدرسة القرآنية السابقة" class="border p-2 rounded" />
-                        <textarea name="religious_needs" placeholder="Religious Observance Needs / احتياجات دينية خاصة" rows="2" class="border p-2 rounded"></textarea>
+                        <input name="muslim_name" placeholder="Muslim Name" class="border p-2 rounded" />
+                        <input name="quran_reading" placeholder="Qur'an Reading Ability" class="border p-2 rounded" />
+                        <input name="memorization_level" placeholder="Level of Qur'an Memorization" class="border p-2 rounded" />
+                        <input name="previous_madrasah" placeholder="Previous Madrasah Attended" class="border p-2 rounded" />
+                        <textarea name="religious_needs" placeholder="Religious Observance Needs" rows="2" class="border p-2 rounded"></textarea>
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">G. TRANSPORT & HOSTEL INFORMATION / بيانات النقل والسكن</h3>
+                    <h3 class="font-bold text-lg mb-2">G. TRANSPORT & HOSTEL INFORMATION</h3>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="transport_mode" placeholder="Mode of Transportation / وسيلة المواصلات" class="border p-2 rounded" />
+                        <input name="transport_mode" placeholder="Mode of Transportation" class="border p-2 rounded" />
                         <select name="boarding_status" class="border p-2 rounded">
-                            <option>Boarding or Day / داخلي خارجي</option>
+                            <option>Boarding or Day</option>
                             <option>Day</option>
                             <option>Boarding</option>
                         </select>
-                        <input name="bus_pickup" placeholder="Bus Pick-up & Drop-off Point / مكان الصعود والنزول" class="border p-2 rounded" />
+                        <input name="bus_pickup" placeholder="Bus Pick-up & Drop-off Point" class="border p-2 rounded" />
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">H. DECLARATION & UNDERTAKING / الإقرار والتعهد</h3>
+                    <h3 class="font-bold text-lg mb-2">H. DECLARATION & UNDERTAKING</h3>
                     <p class="text-sm mb-2">اقرأ بأن جميع المعلومات الواردة أعلاه صحيحة، واتعهد بالالتزام بجميع قوانين وأنظمة المدرسة.</p>
                     <div class="grid md:grid-cols-2 gap-3">
-                        <input name="declaration_name" placeholder="Name of Parent/Guardian / اسم ولي الأمر / الوصي" class="border p-2 rounded" required />
-                        <input name="declaration_signature" placeholder="Signature / التوقيع" class="border p-2 rounded" />
+                        <input name="declaration_name" placeholder="Name of Parent/Guardian" class="border p-2 rounded" required />
+                        <input name="declaration_signature" placeholder="Signature" class="border p-2 rounded" />
                         <input name="declaration_date" type="date" class="border p-2 rounded" />
                     </div>
                 </div>
                 <div class="border rounded-xl p-4 bg-gray-50">
-                    <h3 class="font-bold text-lg mb-2">I. REQUIRED ATTACHMENTS / المرافقات المطلوبة</h3>
+                    <h3 class="font-bold text-lg mb-2">I. REQUIRED ATTACHMENTS</h3>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div><label>Birth Certificate / Declaration of Age</label><input type="file" name="attachment_birth_cert" accept="image/*,application/pdf" class="border p-2 rounded w-full" /></div>
                         <div><label>Previous School Report / Testimonial</label><input type="file" name="attachment_previous_report" accept="image/*,application/pdf" class="border p-2 rounded w-full" /></div>
@@ -410,6 +409,20 @@
                 <button id="checkStatusSubmit" class="apply-btn w-full py-2 rounded-xl">Check Status</button>
             </div>
             <div id="statusResult" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PRINT ADMISSION LETTER MODAL — Restored (classic format with stamp)
+         ============================================================ -->
+    <div id="printLetterModal" class="modal">
+        <div class="modal-content relative" style="max-width:850px;background:#fff;">
+            <span class="close-modal-x" onclick="closeModal('printLetterModal')">&times;</span>
+            <div class="flex justify-end gap-2 mb-3">
+                <button onclick="window.print()" class="apply-btn px-5 py-2 rounded-full text-sm"><i class="fas fa-print mr-1"></i>Print Letter</button>
+                <button onclick="closeModal('printLetterModal')" class="bg-gray-500 text-white px-5 py-2 rounded-full text-sm">Close</button>
+            </div>
+            <div id="printLetterContent" style="font-family:'Times New Roman',serif;padding:10px;color:#000;line-height:1.6;"></div>
         </div>
     </div>
 
@@ -574,13 +587,17 @@
     <script>
         // ============================================================
         //  SUPABASE CONFIG
-        //  NOTE: Replace the Paystack key below with your live/test key.
-        //  The value shipped here is a placeholder and will fail.
         // ============================================================
         const SUPABASE_URL = 'https://kabqdeulwpfftbtwwouw.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_OIE7KFQ3quev7pQgKsvFXg_ralf9SMM';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const PAYSTACK_PUBLIC_KEY = 'pk_test_d4f8b2c1a3e5f6b7c8d9e0f1a2b3c4d5e6f7a8b9'; // <-- replace me
+
+        // 🔧 CONFIGURE: School stamp — loaded from Supabase storage repository
+        // Change STAMP_BUCKET / STAMP_FILE to match where you stored the stamp image.
+        const STAMP_BUCKET = 'school-assets';
+        const STAMP_FILE   = 'stamp.png';
+        let STAMP_URL = ''; // populated at startup
 
         const CLASSES = ["Pre-Nursery", "Nursery 1", "Nursery 2", "Nursery 3", "Primary 1", "Primary 2", "Primary 3",
             "Primary 4", "Primary 5", "Primary 6", "JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"
@@ -643,7 +660,6 @@
                 'Staff Appraisal', 'Announce', 'Slides', 'Profile'],
             der: ['Dashboard', 'Enroll', 'Students', 'Unified Staff', 'Academic performance', 'Sections analysis',
                 'Staff Appraisal', 'Announce', 'Slides', 'Profile'],
-            // FIX #2: was 'Section analysis' (singular) which does not exist in viewMap -> fell back to Dashboard.
             dprpa: ['Dashboard', 'Enroll', 'Students', 'Academic performance', 'Sections analysis',
                 'Download Records', 'Staff Appraisal', 'Announce', 'Slides', 'Profile'],
             parent: ['Result', 'Fee payment', 'Payment history'],
@@ -677,6 +693,33 @@
             if (el) el.style.display = 'none';
         }
         window.closeModal = closeModal;
+
+        // ============================================================
+        //  LOAD SCHOOL STAMP FROM REPOSITORY
+        // ============================================================
+        async function loadSchoolStamp() {
+            try {
+                // Try the configured path first
+                let pub = supabaseClient.storage.from(STAMP_BUCKET).getPublicUrl(STAMP_FILE);
+                let url = pub.data.publicUrl;
+                // HEAD-check to confirm it exists
+                let res = await fetch(url, { method: 'HEAD' }).catch(() => null);
+                if (res && res.ok) { STAMP_URL = url; return url; }
+
+                // Fallback: try a few common filenames
+                const fallbacks = ['stamp.png', 'school-stamp.png', 'school_stamp.png', 'STAMP.png', 'stamp.jpg', 'stamp.jpeg'];
+                for (const f of fallbacks) {
+                    if (f === STAMP_FILE) continue;
+                    pub = supabaseClient.storage.from(STAMP_BUCKET).getPublicUrl(f);
+                    res = await fetch(pub.data.publicUrl, { method: 'HEAD' }).catch(() => null);
+                    if (res && res.ok) { STAMP_URL = pub.data.publicUrl; return STAMP_URL; }
+                }
+            } catch (err) {
+                console.warn('Stamp not found in repository:', err);
+            }
+            STAMP_URL = '';
+            return '';
+        }
 
         // ============================================================
         //  DATA REFRESH
@@ -784,7 +827,7 @@
                 profile = newProfile;
             }
             currentUser = { id: profile.id, full_name: profile.full_name, role: profile.role, source: 'profile',
-                avatar_url: profile.avatar_url || '' };
+                email: profile.email || email, avatar_url: profile.avatar_url || '' };
             await refreshData();
             closeModal('loginModal');
             document.getElementById('landingPage').style.display = 'none';
@@ -922,7 +965,6 @@
                 return;
             }
 
-            // Upload attachments first (before payment so we don't charge then fail)
             var fileAttachments = {};
             showLoading(true);
             try {
@@ -1290,7 +1332,7 @@
         }
 
         // ============================================================
-        //  STUDENTS (editable)
+        //  STUDENTS
         // ============================================================
         async function studentsViewEditable() {
             var students = schoolData.students;
@@ -1338,9 +1380,7 @@
                         if (field === 'term_fee') val = parseFloat(val) || 0;
                         const { error } = await supabaseClient.from('students').update({ [field]: val }).eq('id', id);
                         if (error) { showToast(error.message, true); return; }
-                        await refreshData();
-                        studentsViewEditable();
-                        showToast(field + ' saved');
+                        await refreshData(); studentsViewEditable(); showToast(field + ' saved');
                     });
                 });
                 document.querySelectorAll('.student-section-select').forEach(function(select) {
@@ -1596,10 +1636,7 @@
                 try {
                     const { error } = await supabaseClient.from('payroll_records').update({ [field]: val }).eq('id', id);
                     if (error) throw error;
-                    await refreshData();
-                    records = schoolData.payrollRecords;
-                    renderTable();
-                    showToast('Updated successfully');
+                    await refreshData(); records = schoolData.payrollRecords; renderTable(); showToast('Updated successfully');
                 } catch (err) { showToast(err.message, true); } finally { showLoading(false); }
             }
 
@@ -1665,8 +1702,7 @@
                         if (error) throw error;
                         showToast('Record added');
                     }
-                    await refreshData();
-                    records = schoolData.payrollRecords;
+                    await refreshData(); records = schoolData.payrollRecords;
                     closeModal('payrollAddModal');
                     renderTable();
                 } catch (err) { showToast(err.message, true); } finally { showLoading(false); }
@@ -1712,10 +1748,7 @@
             });
 
             document.getElementById('refreshPayrollBtn').addEventListener('click', async function() {
-                await refreshData();
-                records = schoolData.payrollRecords;
-                renderTable();
-                showToast('Refreshed');
+                await refreshData(); records = schoolData.payrollRecords; renderTable(); showToast('Refreshed');
             });
 
             document.getElementById('payrollMonthFilter').addEventListener('change', renderTable);
@@ -1882,7 +1915,6 @@
                 document.getElementById('reportCardContainer').innerHTML = cardHtml;
                 attachResultEditable(sid);
 
-                // FIX #3: window.print() printed a blank page because of the old global print CSS.
                 document.getElementById('printReportBtn').onclick = function() {
                     const content = document.getElementById('reportCardContainer').innerHTML;
                     const win = window.open('', '_blank');
@@ -1912,8 +1944,7 @@
                         });
                         if (existing) await supabaseClient.from('result_extras').update({ days_present: days }).eq('id', existing.id);
                         else await supabaseClient.from('result_extras').insert([{ student_id: sid2, term: term, year: year, days_present: days }]);
-                        await refreshData();
-                        renderReportCard(sid2);
+                        await refreshData(); renderReportCard(sid2);
                     });
                 });
                 document.querySelectorAll('.editable-remarks').forEach(function(cell) {
@@ -1926,8 +1957,7 @@
                         });
                         if (existing) await supabaseClient.from('result_extras').update({ remarks: remarks }).eq('id', existing.id);
                         else await supabaseClient.from('result_extras').insert([{ student_id: sid2, term: term, year: year, remarks: remarks }]);
-                        await refreshData();
-                        renderReportCard(sid2);
+                        await refreshData(); renderReportCard(sid2);
                     });
                 });
                 document.querySelectorAll('.quality-select').forEach(function(sel) {
@@ -1941,8 +1971,7 @@
                         qualities[quality] = grade;
                         if (existing) await supabaseClient.from('result_extras').update({ qualities: qualities }).eq('id', existing.id);
                         else await supabaseClient.from('result_extras').insert([{ student_id: sid2, term: term, year: year, qualities: qualities }]);
-                        await refreshData();
-                        renderReportCard(sid2);
+                        await refreshData(); renderReportCard(sid2);
                     });
                 });
             }
@@ -2045,16 +2074,13 @@
                         if (due <= 0) return showToast('No outstanding fee');
                         var self = this;
                         var handler = PaystackPop.setup({
-                            key: PAYSTACK_PUBLIC_KEY,
-                            email: self.dataset.email,
-                            amount: due * 100,
+                            key: PAYSTACK_PUBLIC_KEY, email: self.dataset.email, amount: due * 100,
                             callback: async function(r) {
                                 await supabaseClient.from('payments').insert([{
                                     student_id: self.dataset.id, amount: due, term: term, year: year,
                                     payment_method: 'paystack_online', payment_reference: r.reference, payment_status: 'success'
                                 }]);
-                                await refreshData();
-                                feeManagementEnhanced();
+                                await refreshData(); feeManagementEnhanced();
                                 showToast('Payment of ₦' + due + ' successful');
                             }
                         });
@@ -2077,9 +2103,7 @@
                         var newFee = prompt('Enter new term fee (₦):', student.term_fee || 30000);
                         if (newFee && !isNaN(parseFloat(newFee))) {
                             await supabaseClient.from('students').update({ term_fee: parseFloat(newFee) }).eq('id', studentId);
-                            await refreshData();
-                            feeManagementEnhanced();
-                            showToast('Term fee updated');
+                            await refreshData(); feeManagementEnhanced(); showToast('Term fee updated');
                         }
                     });
                 });
@@ -2148,8 +2172,7 @@
                     }]);
                     showToast('Bank transfer verified and ₦' + amount + ' recorded');
                 }
-                await refreshData();
-                feeManagementEnhanced();
+                await refreshData(); feeManagementEnhanced();
             } catch (err) { showToast(err.message, true); } finally {
                 showLoading(false);
                 pendingPaymentAction = null;
@@ -2157,7 +2180,7 @@
         });
 
         // ============================================================
-        //  APPLICATIONS (admin view)
+        //  APPLICATIONS (admin) — WITH PRINT ADMISSION LETTER
         // ============================================================
         async function applicationsViewEnhanced() {
             var apps = schoolData.applications;
@@ -2184,10 +2207,12 @@
                         '">' + escapeHtml(app.status || 'pending') + '</span></div><p class="text-sm text-gray-600 mt-1"><i class="fas fa-envelope mr-1"></i> ' +
                         escapeHtml(app.email || '—') + '</p><p class="text-sm text-gray-600"><i class="fas fa-graduation-cap mr-1"></i> ' +
                         escapeHtml(app.desired_class || '—') + '</p></div><div class="p-4 flex flex-wrap gap-2 justify-between items-center"><button class="view-app-details text-blue-600 hover:text-blue-800 text-sm" data-id="' +
-                        app.id + '"><i class="fas fa-eye mr-1"></i> View Details</button><div class="flex gap-2">' +
+                        app.id + '"><i class="fas fa-eye mr-1"></i> View Details</button><div class="flex gap-2 flex-wrap">' +
                         (app.status !== 'accepted' ? '<button class="accept-app-with-details bg-green-600 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '">Accept</button>' : '') +
                         (app.status !== 'rejected' ? '<button class="reject-app bg-red-600 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '">Reject</button>' : '') +
-                        '<button class="delete-app bg-gray-500 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '">Delete</button></div></div></div>';
+                        '<button class="print-letter-btn bg-indigo-600 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '"><i class="fas fa-print mr-1"></i>Print Letter</button>' +
+                        '<button class="delete-app bg-gray-500 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '">Delete</button>' +
+                        '</div></div></div>';
                 }).join('');
                 attachAppEvents();
             }
@@ -2260,9 +2285,7 @@
                     btn.addEventListener('click', async function() {
                         if (confirm('Reject this application?')) {
                             await supabaseClient.from('applications').update({ status: 'rejected' }).eq('id', this.dataset.id);
-                            await refreshData();
-                            applicationsViewEnhanced();
-                            showToast('Application rejected');
+                            await refreshData(); applicationsViewEnhanced(); showToast('Application rejected');
                         }
                     });
                 });
@@ -2270,10 +2293,14 @@
                     btn.addEventListener('click', async function() {
                         if (confirm('Permanently delete this application?')) {
                             await supabaseClient.from('applications').delete().eq('id', this.dataset.id);
-                            await refreshData();
-                            applicationsViewEnhanced();
-                            showToast('Application deleted');
+                            await refreshData(); applicationsViewEnhanced(); showToast('Application deleted');
                         }
+                    });
+                });
+                // ✅ PRINT ADMISSION LETTER
+                document.querySelectorAll('.print-letter-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        printAdmissionLetter(this.dataset.id);
                     });
                 });
             }
@@ -2281,8 +2308,7 @@
             document.getElementById('appSearch').addEventListener('input', renderApps);
             document.getElementById('appStatusFilter').addEventListener('change', renderApps);
             document.getElementById('refreshAppsBtn').addEventListener('click', async function() {
-                await refreshData();
-                applicationsViewEnhanced();
+                await refreshData(); applicationsViewEnhanced();
             });
             document.getElementById('exportAppsCsv').addEventListener('click', function() {
                 var rows = [['ID', 'Full Name', 'Email', 'Desired Class', 'Status', 'Created At']];
@@ -2297,6 +2323,112 @@
             });
             renderApps();
         }
+
+        // ============================================================
+        //  ✅ PRINT ADMISSION LETTER (classic — with school stamp
+        //     loaded from Supabase storage repository)
+        // ============================================================
+        async function printAdmissionLetter(appId) {
+            var app = schoolData.applications.find(function(a) { return a.id == appId; });
+            if (!app) { showToast('Application not found', true); return; }
+
+            showLoading(true);
+            // Ensure the stamp URL is loaded from the repository
+            if (!STAMP_URL) await loadSchoolStamp();
+            showLoading(false);
+
+            var fd = app.form_data || {};
+            var official = app.official_data || {};
+
+            var studentName = app.full_name || (((fd.first_name || '') + ' ' + (fd.surname || '')).trim()) || 'N/A';
+            var admittedClass = official.admitted_class || app.desired_class || '________';
+            var admissionNumber = official.admission_number || '________';
+            var admissionDate = official.admission_date
+                ? new Date(official.admission_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+            var entranceScore = official.entrance_score || '——';
+            var interviewRemarks = official.interview_remarks || '';
+            var headName = official.authorized_signature_name || 'Head Master';
+            var headSig = official.authorized_signature_image || '';
+            var regName = official.register_signature_name || 'Register';
+            var regSig = official.register_signature_image || '';
+
+            var parentName = fd.father_name || fd.guardian_name || fd.mother_name || 'Parent/Guardian';
+            var parentAddress = fd.parent_residence || fd.home_address || '';
+            var refNo = 'AIFW/ADM/' + new Date().getFullYear() + '/' + String(app.id).slice(-4).toUpperCase();
+
+            // Stamp block (only displayed if we have a URL)
+            var stampBlock = STAMP_URL
+                ? '<div style="position:absolute;right:30px;bottom:80px;opacity:0.85;pointer-events:none;">'
+                    + '<img src="' + STAMP_URL + '" class="letter-stamp" alt="School Stamp" onerror="this.style.display=\'none\'">'
+                  + '</div>'
+                : '';
+
+            var html =
+                '<div style="position:relative;min-height:900px;">'
+                + stampBlock
+                + '<div style="text-align:center;">'
+                + '<img src="logo.jpg" alt="School Logo" style="max-height:75px;display:block;margin:0 auto 4px;" onerror="this.style.display=\'none\'">'
+                + '<h1 style="margin:0;font-size:22px;letter-spacing:1px;">AL-ISTIQAAMAH FLYING WINGS ACADEMY</h1>'
+                + '<p style="margin:2px 0;font-size:16px;">أكاديمية الاستقامة أجنحة التحليق</p>'
+                + '<p style="margin:2px 0;font-size:12px;">No. 10 Federal Government Layout, Samaru, Zaria, Kaduna State</p>'
+                + '<p style="margin:2px 0;font-size:12px;">Tel: 08072550691 | 07025553245 | 08084816590</p>'
+                + '</div>'
+                + '<hr style="border:none;border-top:2px double #000;margin:14px 0;">'
+                + '<table style="width:100%;font-size:13px;"><tr>'
+                + '<td><strong>Ref:</strong> ' + refNo + '</td>'
+                + '<td style="text-align:right;"><strong>Date:</strong> ' + admissionDate + '</td>'
+                + '</tr></table>'
+                + '<p style="margin:18px 0 8px;"><strong>' + escapeHtml(parentName) + '</strong><br>' + escapeHtml(parentAddress) + '</p>'
+                + '<p style="margin:14px 0 6px;">Dear Sir/Madam,</p>'
+                + '<p style="text-align:center;font-weight:bold;text-decoration:underline;margin:16px 0;">OFFER OF PROVISIONAL ADMISSION</p>'
+                + '<p style="text-align:justify;">Assalamu Alaikum Warahmatullahi Wabarakatuh.</p>'
+                + '<p style="text-align:justify;">Following your ward\'s application and successful performance in the entrance assessment '
+                + 'and interview, we are pleased to offer <strong>' + escapeHtml(studentName)
+                + '</strong> a place of <strong>provisional admission</strong> into <strong>'
+                + escapeHtml(admittedClass) + '</strong> of this Academy.</p>'
+                + '<p style="text-align:justify;">The details of this admission are as stated below:</p>'
+                + '<table style="width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;">'
+                + '<tr><td style="border:1px solid #333;padding:6px;width:40%;background:#f4f4f4;"><strong>Student Name</strong></td>'
+                + '<td style="border:1px solid #333;padding:6px;">' + escapeHtml(studentName) + '</td></tr>'
+                + '<tr><td style="border:1px solid #333;padding:6px;background:#f4f4f4;"><strong>Admission Number</strong></td>'
+                + '<td style="border:1px solid #333;padding:6px;">' + escapeHtml(admissionNumber) + '</td></tr>'
+                + '<tr><td style="border:1px solid #333;padding:6px;background:#f4f4f4;"><strong>Class Admitted</strong></td>'
+                + '<td style="border:1px solid #333;padding:6px;">' + escapeHtml(admittedClass) + '</td></tr>'
+                + '<tr><td style="border:1px solid #333;padding:6px;background:#f4f4f4;"><strong>Entrance Score</strong></td>'
+                + '<td style="border:1px solid #333;padding:6px;">' + escapeHtml(String(entranceScore)) + '</td></tr>'
+                + '<tr><td style="border:1px solid #333;padding:6px;background:#f4f4f4;"><strong>Date of Admission</strong></td>'
+                + '<td style="border:1px solid #333;padding:6px;">' + admissionDate + '</td></tr>'
+                + (interviewRemarks ? '<tr><td style="border:1px solid #333;padding:6px;background:#f4f4f4;"><strong>Interview Remarks</strong></td>'
+                    + '<td style="border:1px solid #333;padding:6px;">' + escapeHtml(interviewRemarks) + '</td></tr>' : '')
+                + '</table>'
+                + '<p style="text-align:justify;">This offer is however subject to the following conditions:</p>'
+                + '<ol style="padding-left:22px;font-size:13px;">'
+                + '<li>Payment of the full term fee and other dues within two (2) weeks of this offer.</li>'
+                + '<li>Submission of the original birth certificate, previous school report and transfer certificate (where applicable).</li>'
+                + '<li>Purchase of the prescribed school uniform and other materials directly from the school.</li>'
+                + '<li>Strict compliance with the rules and regulations of Al-Istiqaamah Flying Wings Academy.</li>'
+                + '</ol>'
+                + '<p style="text-align:justify;">We congratulate you and your ward on this achievement and look forward to welcoming you into the Al-Istiqaamah Flying Wings family. May Allah (SWT) bless this new chapter of learning.</p>'
+                + '<p style="margin-top:16px;">Wassalam.</p>'
+                + '<table style="width:100%;margin-top:50px;font-size:13px;"><tr>'
+                + '<td style="text-align:center;width:50%;">'
+                + (headSig ? '<img src="' + headSig + '" style="max-height:55px;display:block;margin:0 auto 3px;">' : '<br><br>')
+                + '<div style="border-top:1px solid #000;width:70%;margin:0 auto;padding-top:4px;">'
+                + escapeHtml(headName) + '<br><strong>Head Master</strong></div></td>'
+                + '<td style="text-align:center;width:50%;">'
+                + (regSig ? '<img src="' + regSig + '" style="max-height:55px;display:block;margin:0 auto 3px;">' : '<br><br>')
+                + '<div style="border-top:1px solid #000;width:70%;margin:0 auto;padding-top:4px;">'
+                + escapeHtml(regName) + '<br><strong>Register</strong></div></td>'
+                + '</tr></table>'
+                + '<p style="text-align:center;font-size:11px;margin-top:36px;border-top:1px solid #ccc;padding-top:8px;">'
+                + 'Faith &bull; Knowledge &bull; Leadership &nbsp;|&nbsp; This is a computer-generated letter.</p>'
+                + '</div>';
+
+            document.getElementById('printLetterContent').innerHTML = html;
+            document.getElementById('printLetterModal').style.display = 'flex';
+        }
+        window.printAdmissionLetter = printAdmissionLetter;
 
         // ============================================================
         //  SIGNATURE PADS
@@ -2324,7 +2456,6 @@
                 registerSignaturePad.clear();
             }
 
-            // Guard so these are only bound once
             if (!window._sigButtonsBound) {
                 window._sigButtonsBound = true;
                 document.getElementById('clearSignatureBtn')?.addEventListener('click', function() { signaturePad && signaturePad.clear(); });
@@ -2404,7 +2535,6 @@
                 a.download = filename;
                 a.click();
             }
-
             document.getElementById('dlStudents').onclick = function() {
                 var rows = [['ID', 'Reg No', 'Name', 'Parent', 'Section', 'Class', 'Term Fee']];
                 schoolData.students.forEach(function(s) {
@@ -2437,8 +2567,7 @@
                 escapeHtml(ann) + '</textarea><button id="updateAnnBtn" class="apply-btn mt-4 px-6 py-2 rounded-full">Update Announcement</button></div>';
             document.getElementById('updateAnnBtn').onclick = async function() {
                 await supabaseClient.from('site_announcement').upsert({ id: 1, content: document.getElementById('annText').value });
-                await refreshData();
-                showToast('Announcement updated');
+                await refreshData(); showToast('Announcement updated');
             };
         }
 
@@ -2461,17 +2590,14 @@
                     if (up.error) throw up.error;
                     var pub = supabaseClient.storage.from('school-slides').getPublicUrl(path);
                     await supabaseClient.from('slides').insert([{ image_url: pub.data.publicUrl, caption: document.getElementById('slideCaption').value }]);
-                    await refreshData();
-                    slidesManageView();
-                    showToast('Slide uploaded');
+                    await refreshData(); slidesManageView(); showToast('Slide uploaded');
                 } catch (err) { showToast(err.message, true); } finally { showLoading(false); }
             };
             document.querySelectorAll('.delete-slide').forEach(function(btn) {
                 btn.addEventListener('click', async function() {
                     if (!confirm('Delete this slide?')) return;
                     await supabaseClient.from('slides').delete().eq('id', this.dataset.id);
-                    await refreshData();
-                    slidesManageView();
+                    await refreshData(); slidesManageView();
                 });
             });
         }
@@ -2576,8 +2702,7 @@
             document.getElementById('viewStaffFilter').addEventListener('change', render);
             document.getElementById('viewAppraiserFilter').addEventListener('change', render);
             document.getElementById('refreshAppraisalsView').addEventListener('click', async function() {
-                await refreshData();
-                viewAppraisalsView();
+                await refreshData(); viewAppraisalsView();
             });
             render();
         }
@@ -2587,8 +2712,7 @@
         // ============================================================
         async function performanceAppraisalView() {
             if (!['dg_ceo', 'management_committee'].includes(currentUser.role)) {
-                showToast('Access denied', true);
-                return;
+                showToast('Access denied', true); return;
             }
             var html =
                 '<div class="card p-6 bg-white rounded-2xl shadow"><h2 class="text-2xl font-bold mb-4">📋 DG/CEO Performance Appraisal</h2><div class="mb-4"><label class="font-bold">Load Previous:</label><select id="loadAppraisalSelect" class="border p-2 rounded w-64 ml-2"><option value="">-- New --</option>' +
@@ -2688,18 +2812,14 @@
                     if (field === 'weight' && newValue < 1) newValue = 1;
                     const { error } = await supabaseClient.from('director_kpis').update({ [field]: newValue }).eq('id', id);
                     if (error) { showToast(error.message, true); return; }
-                    await refreshData();
-                    directorRolesView();
-                    showToast(field + ' updated');
+                    await refreshData(); directorRolesView(); showToast(field + ' updated');
                 });
             });
             document.querySelectorAll('.delete-kpi').forEach(function(btn) {
                 btn.addEventListener('click', async function() {
                     if (confirm('Delete this KPI?')) {
                         await supabaseClient.from('director_kpis').delete().eq('id', this.dataset.id);
-                        await refreshData();
-                        directorRolesView();
-                        showToast('KPI deleted');
+                        await refreshData(); directorRolesView(); showToast('KPI deleted');
                     }
                 });
             });
@@ -2714,9 +2834,7 @@
                         director_role: role, kpi_name: newKpiName, target_value: target, current_value: 0, weight: weight
                     }]);
                     if (error) { showToast(error.message, true); return; }
-                    await refreshData();
-                    directorRolesView();
-                    showToast('KPI added for ' + role);
+                    await refreshData(); directorRolesView(); showToast('KPI added for ' + role);
                 });
             });
 
@@ -2735,11 +2853,8 @@
             if (directorChart) directorChart.destroy();
             directorChart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: directorRoles,
-                    datasets: [{ label: 'Overall Performance (%)', data: directorRoles.map(function(r) { return overallScores[r]; }),
-                        backgroundColor: 'rgba(245, 158, 11, 0.6)', borderRadius: 8 }]
-                },
+                data: { labels: directorRoles, datasets: [{ label: 'Overall Performance (%)', data: directorRoles.map(function(r) { return overallScores[r]; }),
+                    backgroundColor: 'rgba(245, 158, 11, 0.6)', borderRadius: 8 }] },
                 options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Achievement %' } } } }
             });
             document.getElementById('refreshKpisBtn').onclick = function() { directorRolesView(); };
@@ -2816,8 +2931,7 @@
         async function saveAppraisal(studentId, comment, rating) {
             if (!studentId || !comment || rating < 1 || rating > 5) { showToast('Invalid appraisal data', true); return false; }
             var { error } = await supabaseClient.from('student_appraisals').insert([{
-                student_id: studentId, comment: comment, rating: rating,
-                created_by: currentUser.id, created_at: new Date()
+                student_id: studentId, comment: comment, rating: rating, created_by: currentUser.id, created_at: new Date()
             }]);
             if (error) { showToast(error.message, true); return false; }
             showToast('Student appraisal saved');
@@ -2880,9 +2994,7 @@
                     btn.addEventListener('click', async function() {
                         if (!confirm('Delete this subject result?')) return;
                         await supabaseClient.from('results').delete().eq('id', this.dataset.id);
-                        await refreshData();
-                        loadSubjects(sid);
-                        showToast('Subject deleted');
+                        await refreshData(); loadSubjects(sid); showToast('Subject deleted');
                     });
                 });
                 document.querySelectorAll('.edit-subject-btn').forEach(function(btn) {
@@ -2896,8 +3008,6 @@
                     });
                 });
             }
-
-            // FIX #4: expose the loader so the *globally bound* edit-grade handler can call it.
             window._reloadSubjects = loadSubjects;
 
             document.getElementById('addSubjectGradeBtn').onclick = async function() {
@@ -2909,8 +3019,7 @@
                 var ca2 = parseInt(document.getElementById('ca2Val').value) || 0;
                 var exam = parseInt(document.getElementById('examVal').value) || 0;
                 if (ca1 < 0 || ca1 > 20 || ca2 < 0 || ca2 > 20 || exam < 0 || exam > 60) {
-                    showToast('Invalid marks: CA (0-20), Exam (0-60)', true);
-                    return;
+                    showToast('Invalid marks: CA (0-20), Exam (0-60)', true); return;
                 }
                 var term = document.getElementById('teacherTerm').value;
                 var year = parseInt(document.getElementById('teacherYear').value);
@@ -2947,12 +3056,7 @@
             filterStudents();
         }
 
-        // ============================================================
-        //  EDIT GRADE FORM — FIX #5: bound ONCE at top level.
-        //  Previously this was inside teacherResultEntry(), so every time the
-        //  teacher opened the view, another duplicate submit listener stacked up,
-        //  causing the same grade to be saved multiple times.
-        // ============================================================
+        // Edit grade form (bound once)
         (function bindEditGradeFormOnce() {
             var form = document.getElementById('editGradeForm');
             if (!form || window._editGradeBound) return;
@@ -2964,8 +3068,7 @@
                 var ca2 = parseInt(document.getElementById('editCa2').value) || 0;
                 var exam = parseInt(document.getElementById('editExam').value) || 0;
                 if (ca1 < 0 || ca1 > 20 || ca2 < 0 || ca2 > 20 || exam < 0 || exam > 60) {
-                    showToast('Invalid marks: CA (0-20), Exam (0-60)', true);
-                    return;
+                    showToast('Invalid marks: CA (0-20), Exam (0-60)', true); return;
                 }
                 showLoading(true);
                 try {
@@ -3095,9 +3198,7 @@
                         if (field === 'term_fee') val = parseFloat(val) || 0;
                         const { error } = await supabaseClient.from('students').update({ [field]: val }).eq('id', id);
                         if (error) { showToast(error.message, true); return; }
-                        await refreshData();
-                        sectionStudentsView();
-                        showToast(field + ' updated');
+                        await refreshData(); sectionStudentsView(); showToast(field + ' updated');
                     });
                 });
                 document.querySelectorAll('.section-update').forEach(function(select) {
@@ -3197,10 +3298,7 @@
             termSelect.addEventListener('change', loadReport);
             yearInput.addEventListener('change', loadReport);
             document.getElementById('refreshSectionFees').addEventListener('click', async function() {
-                await refreshData();
-                students = schoolData.students;
-                loadReport();
-                showToast('Section fee report refreshed');
+                await refreshData(); students = schoolData.students; loadReport(); showToast('Section fee report refreshed');
             });
             loadReport();
         }
@@ -3243,7 +3341,6 @@
                         '</td><td>' + s.avgRating.toFixed(1) + ' / 5</td><td><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-emerald-600 h-2.5 rounded-full" style="width: ' +
                         s.overallScore + '%"></div></div>' + s.overallScore + '%</td><td>' + s.appraisalCount + '</td></tr>';
                 }).join('');
-
                 var top10 = filtered.slice().sort(function(a, b) { return b.overallScore - a.overallScore; }).slice(0, 10);
                 if (window.staffPerfChart) window.staffPerfChart.destroy();
                 window.staffPerfChart = new Chart(document.getElementById('staffPerformanceChart'), {
@@ -3259,8 +3356,7 @@
             document.getElementById('staffRolePerfFilter').addEventListener('change', renderTable);
             document.getElementById('staffPerfSearch').addEventListener('input', renderTable);
             document.getElementById('refreshPerfBtn').addEventListener('click', async function() {
-                await refreshData();
-                staffPerformanceAnalysisView();
+                await refreshData(); staffPerformanceAnalysisView();
             });
             renderTable();
         }
@@ -3311,7 +3407,6 @@
                         return studentIds.includes(r.student_id) && r.term === term && r.year === year;
                     });
                     if (selectedSubject !== 'all') results = results.filter(function(r) { return r.subject === selectedSubject; });
-
                     var studentAverages = studentIds.map(function(sid) {
                         var sr = results.filter(function(r) { return r.student_id === sid; });
                         return sr.length ? sr.reduce(function(s, r) { return s + (r.total || 0); }, 0) / sr.length : 0;
@@ -3319,7 +3414,6 @@
                     var avgScore = studentAverages.length ? studentAverages.reduce(function(a, b) { return a + b; }, 0) / studentAverages.length : 0;
                     var passCount = studentAverages.filter(function(s) { return s >= 50; }).length;
                     var passRate = studentAverages.length ? (passCount / studentAverages.length) * 100 : 0;
-
                     var subjectScores = {};
                     results.forEach(function(r) {
                         if (!subjectScores[r.subject]) subjectScores[r.subject] = { total: 0, count: 0 };
@@ -3379,9 +3473,7 @@
                 }).join('') : '<tr><td colspan="5" class="text-center text-gray-500 py-3">No results for the selected filters.</td></tr>';
             }
             document.getElementById('refreshSectionAnalysis').addEventListener('click', async function() {
-                await refreshData();
-                sectionAnalysisView();
-                showToast('Analysis refreshed');
+                await refreshData(); sectionAnalysisView(); showToast('Analysis refreshed');
             });
             document.getElementById('sectionAnalysisTerm').addEventListener('change', loadAnalysis);
             document.getElementById('sectionAnalysisYear').addEventListener('change', loadAnalysis);
@@ -3495,8 +3587,7 @@
                                 student_id: studentId, amount: due, term: term, year: currentYear,
                                 payment_method: 'paystack_online', payment_reference: response.reference, payment_status: 'success'
                             }]);
-                            await refreshData();
-                            parentPaymentPortalView();
+                            await refreshData(); parentPaymentPortalView();
                             showToast('Payment of ₦' + due + ' successful');
                         }
                     });
@@ -3519,8 +3610,7 @@
                                 amount: termFee, term: term, year: currentYear
                             }]);
                         }
-                        await refreshData();
-                        showToast('Bank proof uploaded. Admin will verify.');
+                        await refreshData(); showToast('Bank proof uploaded. Admin will verify.');
                         parentPaymentPortalView();
                     } catch (err) { showToast(err.message, true); } finally { showLoading(false); }
                 });
@@ -3612,8 +3702,6 @@
                 resultDiv.innerHTML = '<span class="text-red-600">Please enter at least one search criterion (Name, Phone, or Email).</span>';
                 return;
             }
-
-            // Always refresh from server so the status is current
             showLoading(true);
             try { await refreshData(); } finally { showLoading(false); }
 
@@ -3653,20 +3741,32 @@
                 if (status === 'accepted' && official.admission_number) {
                     html += '<div class="mt-1 text-sm text-green-700">Admission No: ' + escapeHtml(official.admission_number) + '</div>';
                 }
+                if (status === 'accepted') {
+                    html += '<div class="mt-2"><button class="print-letter-from-status bg-indigo-600 text-white px-3 py-1 rounded-full text-xs" data-id="' + app.id + '"><i class="fas fa-print mr-1"></i>Print Admission Letter</button></div>';
+                }
                 html += '</div>';
             });
             html += '</div>';
             resultDiv.innerHTML = html;
+
+            // Bind print buttons for accepted applications
+            resultDiv.querySelectorAll('.print-letter-from-status').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    printAdmissionLetter(this.dataset.id);
+                });
+            });
         });
 
         // ============================================================
         //  DOMContentLoaded
         // ============================================================
         document.addEventListener('DOMContentLoaded', async function() {
+            // Preload the school stamp from Supabase storage repository
+            await loadSchoolStamp();
             await refreshData();
             renderLandingCarouselAndAnnouncement();
 
-            // Populate the class dropdown for the application form
+            // Populate class dropdown for the application form
             var appDesiredClass = document.getElementById('appDesiredClass');
             if (appDesiredClass) {
                 CLASSES.forEach(function(c) {
@@ -3676,7 +3776,7 @@
                 });
             }
 
-            // ---- Landing page buttons ----
+            // Landing page buttons
             document.getElementById('staffAdminBtn').onclick = function() { document.getElementById('loginModal').style.display = 'flex'; };
             document.getElementById('parentBtn').onclick = function() { document.getElementById('parentModal').style.display = 'flex'; };
             document.getElementById('adminSignupBtn').onclick = function() { document.getElementById('adminSignupModal').style.display = 'flex'; };
@@ -3684,7 +3784,7 @@
             document.getElementById('checkStatusBtn').onclick = function() { document.getElementById('statusCheckModal').style.display = 'flex'; };
             document.getElementById('publicApplyBtn').onclick = function() { document.getElementById('applicantAuthModal').style.display = 'flex'; };
 
-            // ---- Applicant auth tabs ----
+            // Applicant auth tabs
             document.getElementById('applicantLoginTab').addEventListener('click', function() {
                 document.getElementById('applicantLoginForm').style.display = 'block';
                 document.getElementById('applicantRegisterForm').style.display = 'none';
@@ -3719,7 +3819,6 @@
                 try { await applicantRegister(email, password, fullName); } catch (err) { showToast(err.message, true); }
             });
 
-            // ---- Auth form submissions ----
             document.getElementById('adminLoginForm').onsubmit = async function(e) {
                 e.preventDefault();
                 try { await adminLogin(document.getElementById('adminEmail').value, document.getElementById('adminPassword').value); }
@@ -3748,7 +3847,6 @@
                 } catch (err) { showToast(err.message, true); }
             };
 
-            // ---- Sidebar / mobile ----
             document.getElementById('mobileMenuToggle').onclick = function() {
                 document.getElementById('dynamicSidebar').classList.add('open');
                 document.getElementById('sidebarOverlay').classList.add('active');
@@ -3766,7 +3864,6 @@
             document.getElementById('prevSlide').addEventListener('click', prevSlide);
             document.getElementById('nextSlide').addEventListener('click', nextSlide);
 
-            // ---- Live clock ----
             function tick() {
                 var d = new Date();
                 document.getElementById('liveTime').innerText = d.toLocaleTimeString();
@@ -3777,4 +3874,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
